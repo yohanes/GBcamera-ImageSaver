@@ -1,6 +1,8 @@
 # Arduino GameBoy ImageSaver configuration file
 FOLDER = "C:\\GB"
-
+#specify a port for quicker startup
+# SERIAL = "/dev/tty.usbmodem1a1231"
+SERIAL = None
 
 
 

@@ -2,6 +2,7 @@
 import struct, random
 import threading, Queue
 import conf
+import os
 
 # modified from http://pseentertainmentcorp.com/smf/index.php?topic=2034.0
 
@@ -27,27 +28,31 @@ default_bmp_header = {'mn1':66,             # B
                       'importantcolors':0}
 
 def bmp_write(header, pixels, filename):
-    '''It takes a header (based on default_bmp_header), 
+    '''It takes a header (based on default_bmp_header),
     the pixel data (from structs, as produced by get_color and row_padding),
     and writes it to filename'''
     header_str = ""
     header_str += struct.pack('<B', header['mn1'])
     header_str += struct.pack('<B', header['mn2'])
+    header_str2 = ""
+    header_str2 += struct.pack('<H', header['undef1'])
+    header_str2 += struct.pack('<H', header['undef2'])
+    header_str2 += struct.pack('<L', header['offset'])
+    header_str2 += struct.pack('<L', header['headerlength'])
+    header_str2 += struct.pack('<L', header['width'])
+    header_str2 += struct.pack('<L', header['height'])
+    header['colorplanes'] = 1
+    header_str2 += struct.pack('<H', header['colorplanes'])
+    header_str2 += struct.pack('<H', header['colordepth'])
+    header_str2 += struct.pack('<L', header['compression'])
+    header_str2 += struct.pack('<L', header['imagesize'])
+    header_str2 += struct.pack('<L', header['res_hor'])
+    header_str2 += struct.pack('<L', header['res_vert'])
+    header_str2 += struct.pack('<L', header['palette'])
+    header_str2 += struct.pack('<L', header['importantcolors'])
+    header["filesize"] = len(header_str) + len(header_str2) + len(pixels) + 4
     header_str += struct.pack('<L', header['filesize'])
-    header_str += struct.pack('<H', header['undef1'])
-    header_str += struct.pack('<H', header['undef2'])
-    header_str += struct.pack('<L', header['offset'])
-    header_str += struct.pack('<L', header['headerlength'])
-    header_str += struct.pack('<L', header['width'])
-    header_str += struct.pack('<L', header['height'])
-    header_str += struct.pack('<H', header['colorplanes'])
-    header_str += struct.pack('<H', header['colordepth'])
-    header_str += struct.pack('<L', header['compression'])
-    header_str += struct.pack('<L', header['imagesize'])
-    header_str += struct.pack('<L', header['res_hor'])
-    header_str += struct.pack('<L', header['res_vert'])
-    header_str += struct.pack('<L', header['palette'])
-    header_str += struct.pack('<L', header['importantcolors'])
+    header_str += header_str2
     #create the outfile
     outfile = open(filename, 'wb')
     #write the header + pixels
@@ -58,7 +63,7 @@ def row_padding(width, colordepth):
     '''returns any necessary row padding'''
     byte_length = width*colordepth/8
     # how many bytes are needed to make byte_length evenly divisible by 4?
-    padding = (4-byte_length)%4 
+    padding = (4-byte_length)%4
     padbytes = ''
     for i in range(padding):
         x = struct.pack('<B',0)
@@ -76,9 +81,9 @@ def pack_hex_color(hex_color):
     green = int(hex_color[3:5], base)
     blue = int(hex_color[5:7], base)
     return pack_color(red, green, blue)
-    
 
-###################################    
+
+###################################
 def test():
     header = default_bmp_header
     header["width"] = 255
@@ -108,11 +113,11 @@ def test():
             j=j-1
         i=i-1
         pixels += row_padding(header['width'], header['colordepth'])
-            
+
     #call the bmp_write function with the
     #dictionary of header values and the
     #pixels as created above.
-    bmp_write(header, pixels, conf.FOLDER + "\test.bmp")
+    bmp_write(header, pixels, os.path.join(conf.FOLDER, "test.bmp"))
 
 def reorderBrand(pxSequence):
     a=[]
@@ -120,7 +125,7 @@ def reorderBrand(pxSequence):
         a.append([])
         for j in xrange(160):
             a[i].append([])
-    
+
     for row in xrange(2):
         for tile in xrange(20):
             for i in xrange(8):
@@ -129,10 +134,10 @@ def reorderBrand(pxSequence):
     return a
 
 def checkFilename(filenameRoot):
-    
+
     i=0
     filename = filenameRoot + str(i) + ".BMP"
-    
+
     while(1):
         try:
             with open(filename) as f: pass
@@ -140,15 +145,15 @@ def checkFilename(filenameRoot):
             filename = filenameRoot + str(i) + ".BMP"
         except:
             return filename
-    
+
 def saveMatrix(iMatrix):
-    
+
     header = default_bmp_header
     header["width"] = 160
     header["height"] = 16
-    
+
     # iMatrix = reorderBrand(iMatrix)
-       
+
     pixels = ''
     for row in range(header['height']-1,-1,-1): #(BMPs are L to R from the bottom L row to top R row)
         for column in range(header['width']):
@@ -157,15 +162,15 @@ def saveMatrix(iMatrix):
             blue = iMatrix[row][column]['b']
             pixels = pixels + pack_color(red, green, blue)
         pixels += row_padding(header['width'], header['colordepth'])
-    imagePath = checkFilename(conf.FOLDER + "\GBimage")
+    imagePath = checkFilename(os.path.join(conf.FOLDER, "GBimage"))
     bmp_write(header, pixels, imagePath)
 
 def saveImage(iMatrix):
-    
+
     header = default_bmp_header
     header["width"] = 160
     header["height"] = 144
-    
+
     pixels = ''
     for row in range(header['height']-1,-1,-1): # (BMPs are L to R from the bottom L row to top R row)
         for column in range(header['width']):
@@ -180,27 +185,28 @@ def saveImage(iMatrix):
                 blue = 00
                 pixels = pixels + pack_color(red, green, blue)
                 print "ERROR:"
-                print iMatrix[row][column]                                      
+                print iMatrix[row][column]
         pixels += row_padding(header['width'], header['colordepth'])
-    imagePath = checkFilename(conf.FOLDER + "\GBimage")
+    imagePath = checkFilename(os.path.join(conf.FOLDER, "GBimage"))
     bmp_write(header, pixels, imagePath)
-    
+
 class ThreadSaveImage(threading.Thread):
     """Threaded Url Grab"""
-    
+
     def __init__(self, gbImageQueue):
         threading.Thread.__init__(self)
         self.gbImageQueue = gbImageQueue
-                 
+        print "save image thread"
+
     def run(self):
         gbImage = []
         i=0
         while True:
             qData = self.gbImageQueue.get(True)
             if qData=='KILL':
-                break                
+                break
             brand = qData
-            
+
             try:
                 brand = reorderBrand(brand)
             except:

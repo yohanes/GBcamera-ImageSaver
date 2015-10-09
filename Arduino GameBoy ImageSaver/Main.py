@@ -3,6 +3,7 @@ from arduinoSerial import openArduinoSerial
 from imgBMP import ThreadSaveImage
 import Queue
 import conf
+import os
 
 white = {'r' : 255, 'g' : 255, 'b' : 255} 
 lgrey = {'r' : 200, 'g' : 200, 'b' : 200}
@@ -80,9 +81,9 @@ def stateMachine():
     gbImage=Queue.Queue()
     saveImage = ThreadSaveImage(gbImage)
     saveImage.start()
-    f = open(conf.FOLDER + "\log.txt", "w")
-    f.close
-    f = open(conf.FOLDER + "\log.txt", "a")
+    f = open(os.path.join(conf.FOLDER, "log.txt"), "w")
+    f.close()
+    f = open(os.path.join(conf.FOLDER, "log.txt"), "a")
     printCmd = 0
     while True:
         GBresponse = ardSerial.readline()

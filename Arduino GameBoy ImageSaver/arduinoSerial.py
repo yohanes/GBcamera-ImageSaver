@@ -1,5 +1,6 @@
 import serial, glob
 import platform
+import conf
 
 arduinoBaudrate = 115200    # Arduino Serial baudrate.
 TOUT = 7                    # Serial timeout in seconds.
@@ -50,8 +51,10 @@ def arduinoSerialPort():
     # This function should return the COM port where arduino es connected:
     
     expectedResponse = "GameBoy ImageSaver"
-    
-    detectedPorts = listSerial()
+    if conf.SERIAL is not None:
+        detectedPorts = [ conf.SERIAL ]
+    else:
+        detectedPorts = listSerial()
     for comPort in detectedPorts:
         candidatePort = serial.Serial(comPort, arduinoBaudrate, timeout = TOUT)
         print "Checking port: " + candidatePort.portstr + " (" + str(comPort) + ")"
